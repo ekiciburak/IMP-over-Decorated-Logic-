@@ -1,4 +1,4 @@
 IMP-over-Decorated-Logic-
 =========================
 
-Program property proving by using decorated logic w.r.t. states effect.
+An equational semantics based on the decorated logic has been provided to IMP imperative language and implemented in Coq. This yields in a first order equational reasoning among programs written in the IMP-EX language. 
