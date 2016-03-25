@@ -1,1 +1,1 @@
-coq_makefile Memory.v Terms.v Decorations.v Derived_Terms.v Axioms.v Derived_Rules.v IMP_to_COQ.v IMP_Proofs.v -o Makefile 
+coq_makefile Memory.v Terms.v Decorations.v Derived_Terms.v Axioms.v Derived_Pairs.v Derived_Products.v Derived_Rules.v Proofs.v IMP_to_COQ.v IMP_Proofs.v -o Makefile 

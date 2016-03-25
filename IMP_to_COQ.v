@@ -9,86 +9,72 @@
 
 Require Import Relations Morphisms.
 Require Import Program.
-Require Memory Terms Decorations Derived_Terms Axioms Derived_Rules.
+Require Memory Terms Decorations Axioms Derived_Terms Derived_Pairs
+        Derived_Products Derived_Rules Proofs.
 Set Implicit Arguments.
 Require Import ZArith.
 Open Scope Z_scope.
+Require Import Bool.
 
 Module Make(Import M: Memory.T).
-  Module Export ConversionExp := Derived_Rules.Make(M).
+  Module Export IMP_to_COQExp := Proofs.Make(M).
 
- Inductive ArithExp : Type :=
-    | const    : Z -> ArithExp
-    | loc      : Loc -> ArithExp
-    | add      : ArithExp -> ArithExp -> ArithExp
-    | multiply : ArithExp -> ArithExp -> ArithExp.
+ Inductive Exp : Type -> Type :=
+    | const    : forall A, A -> Exp A
+    | loc      : Loc -> Exp Z
+    | apply    : forall A B, (A -> B) -> Exp A -> Exp B
+    | pairExp  : forall A B, Exp A    -> Exp B -> Exp (A * B).
 
- Fixpoint defArithExp (a: ArithExp) : term Z unit :=
-  match a with
-    | const n        => (@constant Z n)
-    | loc x          => (lookup x)
-    | add t1 t2      => plus o (pair (defArithExp t1) (defArithExp t2))
-    | multiply t3 t4 => mult o (pair (defArithExp t3) (defArithExp t4))
-  end.
 
- Inductive BoolExp : Type :=
-    | constT  : term boolT unit -> BoolExp
-    | constF  : term boolT unit -> BoolExp
-    | gtT     : ArithExp -> ArithExp -> BoolExp
-    | geT     : ArithExp -> ArithExp -> BoolExp
-    | ltT     : ArithExp -> ArithExp -> BoolExp
-    | leT     : ArithExp -> ArithExp -> BoolExp
-    | eqT     : ArithExp -> ArithExp -> BoolExp
-    | andT    : BoolExp -> BoolExp -> BoolExp
-    | orT     : BoolExp -> BoolExp -> BoolExp.
-
- Fixpoint defBoolExp (b: BoolExp) : term boolT unit :=
-  match b with
-    | constT ttrue  => ttrue
-    | constF ffalse => ffalse
-    | gtT a1 a2     => (gt o (pair (defArithExp a1) (defArithExp a2)))
-    | geT a1 a2     => (ge o (pair (defArithExp a1) (defArithExp a2)))
-    | ltT a1 a2     => (lt o (pair (defArithExp a1) (defArithExp a2)))
-    | leT a1 a2     => (le o (pair (defArithExp a1) (defArithExp a2)))
-    | eqT a1 a2     => (eq o (pair (defArithExp a1) (defArithExp a2)))
-    | andT b1 b2    => (andB o (pair (defBoolExp b1) (defBoolExp b2)))
-    | orT b3 b4     => (orB o (pair (defBoolExp b3) (defBoolExp b4)))
+ Fixpoint defExp A (e: Exp A): term A unit :=
+  match e with
+    | const Z n        => constant n
+    | loc x            => lookup x
+    | apply _ _ f x    => tpure f o (defExp x)
+    | pairExp _ _  x y => pair (defExp x) (defExp y)
   end.
 
  Inductive Command : Type :=
     | skip       : Command
-    | sequence   : Command -> Command -> Command
-    | assign     : Loc -> ArithExp -> Command 
-    | ifthenelse : BoolExp -> Command -> Command -> Command
-    | loops      : BoolExp -> Command -> Command.
+    | sequence   : Command  -> Command -> Command
+    | assign     : Loc      -> Exp Z   -> Command 
+    | ifthenelse : Exp bool -> Command -> Command -> Command
+    | loops      : Exp bool -> Command -> Command.
 
  Fixpoint defCommand (c: Command): (term unit unit) :=
   match c with
     | skip                => (@id unit)
     | sequence c0 c1      => (defCommand c1) o (defCommand c0)
-    | assign i e0         => (update i) o (defArithExp e0)
-    | ifthenelse b c2 c3  => (copair (defCommand c2) (defCommand c3)) o (defBoolExp b)
-    | loops b c4          => (copair (loopdec o defCommand c4) (@id unit)) o (defBoolExp b)
+    | assign j e0         => (update j) o (defExp e0)
+    | ifthenelse b c2 c3  => copair (defCommand c2) (defCommand c3) 
+                              o (passbool o (defExp b))
+    | loops b c4          => (copair (loopdec (passbool o (defExp b)) (defCommand c4) 
+			      o (defCommand c4)) (@id unit)) o (passbool o (defExp b))
   end.
 
- Notation "x '::=' a" := (assign x a) (at level 60).
- Notation "c1 ';;' c2" := (sequence c1 c2) (at level 65).
+ Eval simpl in apply chkgt (pairExp (const 30) (const 40)).
+ Eval simpl in  defExp(apply add (pairExp (const 30) (const 40))).
+ Eval simpl in  defExp(apply chkgt (pairExp (const 30) (const 40))).
+
+ Notation "j '::=' e0" := (assign j e0) (at level 60).
+ Notation "c1 ';;' c2" := (sequence c1 c2) (at level 60).
  Notation "'SKIP'" := (skip) (at level 60).
  Notation "'IFB' b 'THEN' t1 'ELSE' t2 'ENDIF'" := (ifthenelse b t1 t2) (at level 60).
  Notation "'WHILE' b 'DO' c 'ENDWHILE'" := (loops b c) (at level 60).
- Notation " x '+++' y" := (add x y) (at level 60).
- Notation " x '***' y" := (multiply x y) (at level 60).
- Notation " x '>>' y" := (gtT x y) (at level 63).
- Notation " x '>>=' y" := (geT x y) (at level 63).
- Notation " x '<<' y" := (ltT x y) (at level 63).
- Notation " x '<<=' y" := (leT x y) (at level 63).
- Notation " x '===' y" := (eqT x y) (at level 63).
- Notation " x '&&&' y" := (andT x y) (at level 64).
- Notation " x '|||' y" := (orT x y) (at level 64).
- Notation "'{{' c '}}'" := (defCommand c) (at level 67).
- Notation "'``' c '``'" := (defBoolExp c) (at level 67).
+ Notation " x '+++' y" :=  (apply add (pairExp x y)) (at level 60).
+ Notation " x '***' y" := (apply mlt (pairExp x y)) (at level 60).
+ Notation " x '>>' y" := (apply chkgt (pairExp x y)) (at level 60).
+ Notation " x '>>=' y" := (apply chkge (pairExp x y)) (at level 60).
+ Notation " x '<<' y" := (apply chklt (pairExp x y)) (at level 60).
+ Notation " x '<<=' y" := (apply chkle (pairExp x y)) (at level 60).
+ Notation " x '?==' y" := (apply chkeq (pairExp x y)) (at level 60).
+ Notation " x '?&' y" := (apply ve (pairExp x y)) (at level 60).
+ Notation " x '?|' y" := (apply yada (pairExp x y)) (at level 60). 
+ Notation "'{{' c '}}'" := (defCommand c) (at level 60).
+ Notation "'``' c '``'" := (defExp c) (at level 60).
 
 (* -------------------- End of IMP to COQ conversion -------------------- *)
 
 End Make.
+
 
