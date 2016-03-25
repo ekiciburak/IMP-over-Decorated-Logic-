@@ -1,9 +1,9 @@
 (**************************************************************************)
-(*  This is part of STATES, it is distributed under the terms of the      *)
-(*         GNU Lesser General Public License version 3                    *)
-(*              (see file LICENSE for more details)                       *)
+(*  This is part of IMP-STATES, it is distributed under the terms of the  *)
+(*              GNU Lesser General Public License version 3               *)
+(*                  (see file LICENSE for more details)                   *)
 (*                                                                        *)
-(*       Copyright 2013: Jean-Guillaume Dumas, Dominique Duval            *)
+(*       Copyright 2014: Jean-Guillaume Dumas, Dominique Duval            *)
 (*			 Burak Ekici, Damien Pous.                        *)
 (**************************************************************************)
 
@@ -26,4 +26,5 @@ Module Type T.
  Parameter empty_set: Set.
 
 End T.
+
 

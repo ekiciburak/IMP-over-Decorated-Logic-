@@ -1,27 +1,21 @@
 (**************************************************************************)
-(*  This is part of STATES, it is distributed under the terms of the      *)
-(*         GNU Lesser General Public License version 3                    *)
-(*              (see file LICENSE for more details)                       *)
+(*  This is part of IMP-STATES, it is distributed under the terms of the  *)
+(*              GNU Lesser General Public License version 3               *)
+(*                  (see file LICENSE for more details)                   *)
 (*                                                                        *)
-(*       Copyright 2013: Jean-Guillaume Dumas, Dominique Duval            *)
+(*       Copyright 2014: Jean-Guillaume Dumas, Dominique Duval            *)
 (*			 Burak Ekici, Damien Pous.                        *)
 (**************************************************************************)
 
 Require Import Relations Morphisms.
 Require Import Program.
-Require Memory Terms Decorations.
+Require Memory Terms Decorations Derived_Terms.
 Set Implicit Arguments.
 Require Import ZArith.
 Open Scope Z_scope.
 
 Module Make(Import M: Memory.T).
-  Module Export AxiomsExp := Decorations.Make(M). 
-
- Definition ttrue:  term boolT unit := (@copi1 unit unit).
- Definition ffalse: term boolT unit := (@copi2 unit unit). 
-
- Check ttrue.
- Check ffalse.
+  Module Export AxiomsExp := Derived_Terms.Make(M). 
 
  Reserved Notation "x == y" (at level 80).
  Reserved Notation "x ~~ y" (at level 80).
